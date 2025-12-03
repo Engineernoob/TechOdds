@@ -1,4 +1,13 @@
-import { pgTable, text, numeric, timestamp, uuid, pgEnum, boolean, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  numeric,
+  timestamp,
+  uuid,
+  pgEnum,
+  boolean,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { customType } from "drizzle-orm/pg-core";
 
 // Custom vector type for pgvector
@@ -14,9 +23,12 @@ const vector = customType<{ data: number[]; driverData: string }>({
   },
 });
 import { relations } from "drizzle-orm";
-import { createId } from "@paralleldrive/cuid2";
 
-export const marketStatusEnum = pgEnum("market_status", ["open", "closed", "resolved"]);
+export const marketStatusEnum = pgEnum("market_status", [
+  "open",
+  "closed",
+  "resolved",
+]);
 export const tradeSideEnum = pgEnum("trade_side", ["yes", "no"]);
 export const marketCategoryEnum = pgEnum("market_category", [
   "macro",
@@ -29,7 +41,9 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
-  balance: numeric("balance", { precision: 10, scale: 2 }).notNull().default("1000.00"),
+  balance: numeric("balance", { precision: 10, scale: 2 })
+    .notNull()
+    .default("1000.00"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -40,11 +54,21 @@ export const markets = pgTable("markets", {
   category: marketCategoryEnum("category").notNull(),
   resolutionDate: timestamp("resolution_date").notNull(),
   status: marketStatusEnum("status").notNull().default("open"),
-  yesPrice: numeric("yes_price", { precision: 5, scale: 4 }).notNull().default("0.5000"),
-  noPrice: numeric("no_price", { precision: 5, scale: 4 }).notNull().default("0.5000"),
-  liquidity: numeric("liquidity", { precision: 10, scale: 2 }).notNull().default("1000.00"),
-  liquidityYes: numeric("liquidity_yes", { precision: 10, scale: 2 }).notNull().default("500.00"),
-  liquidityNo: numeric("liquidity_no", { precision: 10, scale: 2 }).notNull().default("500.00"),
+  yesPrice: numeric("yes_price", { precision: 5, scale: 4 })
+    .notNull()
+    .default("0.5000"),
+  noPrice: numeric("no_price", { precision: 5, scale: 4 })
+    .notNull()
+    .default("0.5000"),
+  liquidity: numeric("liquidity", { precision: 10, scale: 2 })
+    .notNull()
+    .default("1000.00"),
+  liquidityYes: numeric("liquidity_yes", { precision: 10, scale: 2 })
+    .notNull()
+    .default("500.00"),
+  liquidityNo: numeric("liquidity_no", { precision: 10, scale: 2 })
+    .notNull()
+    .default("500.00"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -95,12 +119,15 @@ export const tradesRelations = relations(trades, ({ one }) => ({
   }),
 }));
 
-export const marketPriceHistoryRelations = relations(marketPriceHistory, ({ one }) => ({
-  market: one(markets, {
-    fields: [marketPriceHistory.marketId],
-    references: [markets.id],
-  }),
-}));
+export const marketPriceHistoryRelations = relations(
+  marketPriceHistory,
+  ({ one }) => ({
+    market: one(markets, {
+      fields: [marketPriceHistory.marketId],
+      references: [markets.id],
+    }),
+  })
+);
 
 // Phase 2: Applicant Futures
 export const applicantFutures = pgTable("applicant_futures", {
@@ -150,16 +177,19 @@ export const notifications = pgTable("notifications", {
 });
 
 // Phase 2 Relations
-export const applicantFuturesRelations = relations(applicantFutures, ({ one }) => ({
-  user: one(users, {
-    fields: [applicantFutures.userId],
-    references: [users.id],
-  }),
-  market: one(markets, {
-    fields: [applicantFutures.marketId],
-    references: [markets.id],
-  }),
-}));
+export const applicantFuturesRelations = relations(
+  applicantFutures,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [applicantFutures.userId],
+      references: [users.id],
+    }),
+    market: one(markets, {
+      fields: [applicantFutures.marketId],
+      references: [markets.id],
+    }),
+  })
+);
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
@@ -174,13 +204,22 @@ export const liquidityPools = pgTable("liquidity_pools", {
   marketId: uuid("market_id")
     .notNull()
     .references(() => markets.id, { onDelete: "cascade" }),
-  yesLiquidity: numeric("yes_liquidity", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  noLiquidity: numeric("no_liquidity", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  totalFees: numeric("total_fees", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  yesLiquidity: numeric("yes_liquidity", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0.00"),
+  noLiquidity: numeric("no_liquidity", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0.00"),
+  totalFees: numeric("total_fees", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0.00"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const liquidityEventTypeEnum = pgEnum("liquidity_event_type", ["add", "remove"]);
+export const liquidityEventTypeEnum = pgEnum("liquidity_event_type", [
+  "add",
+  "remove",
+]);
 
 export const liquidityEvents = pgTable("liquidity_events", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -196,7 +235,11 @@ export const liquidityEvents = pgTable("liquidity_events", {
 });
 
 // Phase 3: Market Resolution & Governance
-export const resolverStatusEnum = pgEnum("resolver_status", ["pending", "approved", "banned"]);
+export const resolverStatusEnum = pgEnum("resolver_status", [
+  "pending",
+  "approved",
+  "banned",
+]);
 
 export const resolvers = pgTable("resolvers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -210,7 +253,11 @@ export const resolvers = pgTable("resolvers", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const disputeStatusEnum = pgEnum("dispute_status", ["open", "closed", "escalated"]);
+export const disputeStatusEnum = pgEnum("dispute_status", [
+  "open",
+  "closed",
+  "escalated",
+]);
 
 export const disputes = pgTable("disputes", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -306,7 +353,9 @@ export const collections = pgTable("collections", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   description: text("description"),
-  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdBy: uuid("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -329,16 +378,19 @@ export const liquidityPoolsRelations = relations(liquidityPools, ({ one }) => ({
   }),
 }));
 
-export const liquidityEventsRelations = relations(liquidityEvents, ({ one }) => ({
-  user: one(users, {
-    fields: [liquidityEvents.userId],
-    references: [users.id],
-  }),
-  market: one(markets, {
-    fields: [liquidityEvents.marketId],
-    references: [markets.id],
-  }),
-}));
+export const liquidityEventsRelations = relations(
+  liquidityEvents,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [liquidityEvents.userId],
+      references: [users.id],
+    }),
+    market: one(markets, {
+      fields: [liquidityEvents.marketId],
+      references: [markets.id],
+    }),
+  })
+);
 
 export const resolversRelations = relations(resolvers, ({ one }) => ({
   user: one(users, {
@@ -403,16 +455,19 @@ export const influencersRelations = relations(influencers, ({ one, many }) => ({
   markets: many(influencerMarkets),
 }));
 
-export const influencerMarketsRelations = relations(influencerMarkets, ({ one }) => ({
-  influencer: one(influencers, {
-    fields: [influencerMarkets.influencerId],
-    references: [influencers.id],
-  }),
-  market: one(markets, {
-    fields: [influencerMarkets.marketId],
-    references: [markets.id],
-  }),
-}));
+export const influencerMarketsRelations = relations(
+  influencerMarkets,
+  ({ one }) => ({
+    influencer: one(influencers, {
+      fields: [influencerMarkets.influencerId],
+      references: [influencers.id],
+    }),
+    market: one(markets, {
+      fields: [influencerMarkets.marketId],
+      references: [markets.id],
+    }),
+  })
+);
 
 export const collectionsRelations = relations(collections, ({ one, many }) => ({
   createdByUser: one(users, {
@@ -422,15 +477,16 @@ export const collectionsRelations = relations(collections, ({ one, many }) => ({
   markets: many(collectionMarkets),
 }));
 
-export const collectionMarketsRelations = relations(collectionMarkets, ({ one }) => ({
-  collection: one(collections, {
-    fields: [collectionMarkets.collectionId],
-    references: [collections.id],
-  }),
-  market: one(markets, {
-    fields: [collectionMarkets.marketId],
-    references: [markets.id],
-  }),
-}));
-
-
+export const collectionMarketsRelations = relations(
+  collectionMarkets,
+  ({ one }) => ({
+    collection: one(collections, {
+      fields: [collectionMarkets.collectionId],
+      references: [collections.id],
+    }),
+    market: one(markets, {
+      fields: [collectionMarkets.marketId],
+      references: [markets.id],
+    }),
+  })
+);
