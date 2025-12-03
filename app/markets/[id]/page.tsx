@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MarketDetail } from "@/components/MarketDetail";
+import { LiquidityPoolCard } from "@/components/v3/LiquidityPoolCard";
+import { AIFairValuePanel } from "@/components/v3/AIFairValuePanel";
+import { CommentThread } from "@/components/v3/CommentThread";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Market, MarketPriceHistory } from "@/lib/db";
+import type { FairValueEstimate } from "@/lib/ai/calibration";
 
 export default function MarketPage() {
   const params = useParams();
@@ -13,6 +17,8 @@ export default function MarketPage() {
   const [market, setMarket] = useState<Market | null>(null);
   const [priceHistory, setPriceHistory] = useState<MarketPriceHistory[]>([]);
   const [aiInsight, setAiInsight] = useState<any>(null);
+  const [fairValue, setFairValue] = useState<FairValueEstimate | null>(null);
+  const [liquidityPool, setLiquidityPool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showAIInsight, setShowAIInsight] = useState(false);
 
@@ -29,17 +35,41 @@ export default function MarketPage() {
 
         // Fetch AI insight
         try {
-          const aiRes = await fetch("/api/ai/suggest-trade", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ marketId: params.id }),
-          });
+          const [aiRes, fairValueRes] = await Promise.all([
+            fetch("/api/ai/suggest-trade", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ marketId: params.id }),
+            }),
+            fetch("/api/ai/calibrate-market", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ marketId: params.id }),
+            }),
+          ]);
+
           if (aiRes.ok) {
             const aiData = await aiRes.json();
             setAiInsight(aiData);
           }
+
+          if (fairValueRes.ok) {
+            const fairValueData = await fairValueRes.json();
+            setFairValue(fairValueData);
+          }
         } catch (error) {
-          console.error("Error fetching AI insight:", error);
+          console.error("Error fetching AI data:", error);
+        }
+
+        // Fetch liquidity pool
+        try {
+          const poolRes = await fetch(`/api/liquidity/pool?marketId=${params.id}`);
+          if (poolRes.ok) {
+            const poolData = await poolRes.json();
+            setLiquidityPool(poolData);
+          }
+        } catch (error) {
+          console.error("Error fetching liquidity pool:", error);
         }
       } catch (error) {
         console.error("Error fetching market:", error);
@@ -93,15 +123,47 @@ export default function MarketPage() {
     return <div className="text-center py-12">Market not found</div>;
   }
 
+  const handleAddLiquidity = () => {
+    // TODO: Open liquidity modal
+    console.log("Add liquidity");
+  };
+
+  const handleRemoveLiquidity = () => {
+    // TODO: Open remove liquidity modal
+    console.log("Remove liquidity");
+  };
+
   return (
     <div className="space-y-6">
       <MarketDetail market={market} priceHistory={priceHistory} onTrade={handleTrade} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {fairValue && (
+          <AIFairValuePanel
+            estimate={fairValue}
+            currentYesPrice={parseFloat(market.yesPrice)}
+          />
+        )}
+
+        {liquidityPool && (
+          <LiquidityPoolCard
+            pool={{
+              yesLiquidity: parseFloat(liquidityPool.yesLiquidity),
+              noLiquidity: parseFloat(liquidityPool.noLiquidity),
+              totalFees: parseFloat(liquidityPool.totalFees),
+            }}
+            marketId={market.id}
+            onAddLiquidity={handleAddLiquidity}
+            onRemoveLiquidity={handleRemoveLiquidity}
+          />
+        )}
+      </div>
 
       {aiInsight && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>AI Insight</CardTitle>
+              <CardTitle>AI Trade Recommendation</CardTitle>
               <Badge variant="outline">Beta</Badge>
             </div>
           </CardHeader>
@@ -144,6 +206,8 @@ export default function MarketPage() {
           </CardContent>
         </Card>
       )}
+
+      <CommentThread marketId={market.id} userId="00000000-0000-0000-0000-000000000000" />
     </div>
   );
 }

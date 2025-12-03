@@ -168,4 +168,269 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+// Phase 3: Liquidity Pools
+export const liquidityPools = pgTable("liquidity_pools", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  yesLiquidity: numeric("yes_liquidity", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  noLiquidity: numeric("no_liquidity", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  totalFees: numeric("total_fees", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const liquidityEventTypeEnum = pgEnum("liquidity_event_type", ["add", "remove"]);
+
+export const liquidityEvents = pgTable("liquidity_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  type: liquidityEventTypeEnum("type").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Phase 3: Market Resolution & Governance
+export const resolverStatusEnum = pgEnum("resolver_status", ["pending", "approved", "banned"]);
+
+export const resolvers = pgTable("resolvers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  status: resolverStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const disputeStatusEnum = pgEnum("dispute_status", ["open", "closed", "escalated"]);
+
+export const disputes = pgTable("disputes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  raisedBy: uuid("raised_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: disputeStatusEnum("status").notNull().default("open"),
+  reasonText: text("reason_text").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Phase 3: Social Layer
+export const comments = pgTable("comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  parentId: uuid("parent_id"), // For replies - reference handled in relations
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const activityFeedTypeEnum = pgEnum("activity_feed_type", [
+  "trade",
+  "future-created",
+  "liquidity",
+  "comment",
+  "resolution",
+  "dispute",
+]);
+
+export const activityFeed = pgTable("activity_feed", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: activityFeedTypeEnum("type").notNull(),
+  metadata: jsonb("metadata").notNull(), // Flexible JSON for different activity types
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Phase 3: Ranking System
+export const rankTierEnum = pgEnum("rank_tier", [
+  "Bronze",
+  "Silver",
+  "Gold",
+  "Platinum",
+  "Insider",
+  "Oracle",
+]);
+
+export const userRank = pgTable("user_rank", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" })
+    .unique(),
+  season: text("season").notNull(), // e.g., "2024-Q1"
+  xp: numeric("xp", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  rank: rankTierEnum("rank").notNull().default("Bronze"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Phase 3: Influencers
+export const influencers = pgTable("influencers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  handle: text("handle").notNull().unique(),
+  description: text("description"),
+  avatarUrl: text("avatar_url"),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const influencerMarkets = pgTable("influencer_markets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  influencerId: uuid("influencer_id")
+    .notNull()
+    .references(() => influencers.id, { onDelete: "cascade" }),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Phase 3: Collections
+export const collections = pgTable("collections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const collectionMarkets = pgTable("collection_markets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collectionId: uuid("collection_id")
+    .notNull()
+    .references(() => collections.id, { onDelete: "cascade" }),
+  marketId: uuid("market_id")
+    .notNull()
+    .references(() => markets.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Phase 3 Relations
+export const liquidityPoolsRelations = relations(liquidityPools, ({ one }) => ({
+  market: one(markets, {
+    fields: [liquidityPools.marketId],
+    references: [markets.id],
+  }),
+}));
+
+export const liquidityEventsRelations = relations(liquidityEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [liquidityEvents.userId],
+    references: [users.id],
+  }),
+  market: one(markets, {
+    fields: [liquidityEvents.marketId],
+    references: [markets.id],
+  }),
+}));
+
+export const resolversRelations = relations(resolvers, ({ one }) => ({
+  user: one(users, {
+    fields: [resolvers.userId],
+    references: [users.id],
+  }),
+  market: one(markets, {
+    fields: [resolvers.marketId],
+    references: [markets.id],
+  }),
+}));
+
+export const disputesRelations = relations(disputes, ({ one }) => ({
+  market: one(markets, {
+    fields: [disputes.marketId],
+    references: [markets.id],
+  }),
+  raisedByUser: one(users, {
+    fields: [disputes.raisedBy],
+    references: [users.id],
+  }),
+}));
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  market: one(markets, {
+    fields: [comments.marketId],
+    references: [markets.id],
+  }),
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id],
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId!],
+    references: [comments.id],
+    relationName: "commentReplies",
+  }),
+  replies: many(comments, {
+    relationName: "commentReplies",
+  }),
+}));
+
+export const activityFeedRelations = relations(activityFeed, ({ one }) => ({
+  user: one(users, {
+    fields: [activityFeed.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userRankRelations = relations(userRank, ({ one }) => ({
+  user: one(users, {
+    fields: [userRank.userId],
+    references: [users.id],
+  }),
+}));
+
+export const influencersRelations = relations(influencers, ({ one, many }) => ({
+  user: one(users, {
+    fields: [influencers.userId],
+    references: [users.id],
+  }),
+  markets: many(influencerMarkets),
+}));
+
+export const influencerMarketsRelations = relations(influencerMarkets, ({ one }) => ({
+  influencer: one(influencers, {
+    fields: [influencerMarkets.influencerId],
+    references: [influencers.id],
+  }),
+  market: one(markets, {
+    fields: [influencerMarkets.marketId],
+    references: [markets.id],
+  }),
+}));
+
+export const collectionsRelations = relations(collections, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [collections.createdBy],
+    references: [users.id],
+  }),
+  markets: many(collectionMarkets),
+}));
+
+export const collectionMarketsRelations = relations(collectionMarkets, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionMarkets.collectionId],
+    references: [collections.id],
+  }),
+  market: one(markets, {
+    fields: [collectionMarkets.marketId],
+    references: [markets.id],
+  }),
+}));
+
 

@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, TrendingUp, User, Settings, FileText, BarChart3, Sparkles } from "lucide-react";
+import {
+  Home,
+  TrendingUp,
+  User,
+  Settings,
+  FileText,
+  BarChart3,
+  Sparkles,
+  Activity,
+  Trophy,
+  Folder,
+  PieChart,
+  Gavel,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -10,6 +24,13 @@ const navigation = [
   { name: "Futures", href: "/futures", icon: Sparkles },
   { name: "Resume Odds", href: "/resume", icon: FileText },
   { name: "Sentiment", href: "/sentiment", icon: BarChart3 },
+  { name: "Feed", href: "/feed", icon: Activity },
+  { name: "Portfolio", href: "/portfolio", icon: PieChart },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
+  { name: "Collections", href: "/collections", icon: Folder },
+  { name: "Influencers", href: "/influencers", icon: Users },
+  { name: "Resolver", href: "/resolver", icon: Gavel },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Admin", href: "/admin", icon: Settings },
 ];
