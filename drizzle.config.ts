@@ -1,15 +1,17 @@
 // @ts-nocheck
 import type { Config } from "drizzle-kit";
-import * as dotenv from "dotenv";
+import { databaseConfig } from "./lib/env";
 
-dotenv.config({ path: ".env.local" });
+if (!databaseConfig.url) {
+  throw new Error("DATABASE_URL is not set in .env.local");
+}
 
 const config: Config = {
   schema: "./db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: databaseConfig.url,
   },
 };
 

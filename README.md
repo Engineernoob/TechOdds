@@ -99,21 +99,22 @@ The platform uses an Automated Market Maker (AMM) system to provide liquidity an
 
 3. **Set up environment variables**
    
-   Create a `.env.local` file in the root directory:
-   ```env
-   # Supabase Configuration
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   
-   # Database Connection
-   DATABASE_URL=postgresql://user:password@host:port/database
+   Copy the example file and edit it:
+   ```bash
+   cp .env.local.example .env.local
    ```
-
-   Get these values from your Supabase project dashboard:
-   - Go to Project Settings → API
-   - Copy the Project URL and anon/public key
-   - Copy the service_role key (keep this secret!)
+   
+   Edit `.env.local` with your actual Supabase credentials. See `SETUP.md` for detailed step-by-step instructions.
+   
+   **Required variables:**
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon/public key  
+   - `DATABASE_URL` - PostgreSQL connection string
+   
+   **Optional variables:**
+   - `SUPABASE_SERVICE_ROLE_KEY` - For admin operations
+   
+   > **Note**: The app uses centralized environment variable management via `/lib/env.ts`. All env vars are validated on startup.
 
 4. **Set up the database**
 
@@ -678,15 +679,27 @@ DATABASE_URL=postgresql://...
 
 ## 🐛 Troubleshooting
 
-### Build Errors
+### Environment Variables
+
+**Error: Missing required environment variables**
+- Ensure `.env.local` exists in the project root
+- Check that variable names match exactly (case-sensitive)
+- Verify values don't contain quotes or extra spaces
+- Restart dev server after changing `.env.local`
+- See `SETUP.md` for detailed setup instructions
 
 **Error: DATABASE_URL is not set**
 - Ensure `.env.local` exists with all required variables
-- Check that variables are correctly named
+- Check that `DATABASE_URL` is properly formatted
+- Verify Supabase project is active (not paused)
+- The app will work without DATABASE_URL during build, but API routes will fail at runtime
+
+### Build Errors
 
 **Error: Module not found**
 - Run `npm install --legacy-peer-deps`
 - Clear `.next` folder: `rm -rf .next`
+- Delete `node_modules` and reinstall: `rm -rf node_modules && npm install --legacy-peer-deps`
 
 **Error: pgvector extension not found**
 - Run in Supabase SQL Editor: `CREATE EXTENSION IF NOT EXISTS vector;`
