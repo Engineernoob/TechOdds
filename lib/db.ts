@@ -33,62 +33,84 @@ export type MarketPriceHistory = typeof schema.marketPriceHistory.$inferSelect;
 export type NewMarketPriceHistory =
   typeof schema.marketPriceHistory.$inferInsert;
 
+// Helper function to wrap database queries with better error handling
+async function dbQuery<T>(queryFn: () => Promise<T>): Promise<T> {
+  if (!db) {
+    throw new Error(
+      "Database not initialized. Please set DATABASE_URL in .env.local"
+    );
+  }
+  try {
+    return await queryFn();
+  } catch (error: any) {
+    if (error?.code === "ENOTFOUND" || error?.code === "ECONNREFUSED") {
+      const hostname = error?.hostname || "unknown";
+      throw new Error(
+        `Cannot connect to database at ${hostname}. ` +
+          `Please verify:\n` +
+          `1. Your DATABASE_URL in .env.local is correct\n` +
+          `2. The Supabase project exists and is active\n` +
+          `3. Your network connection is working\n` +
+          `Original error: ${error.message}`
+      );
+    }
+    throw error;
+  }
+}
+
 // Helper functions
 export async function getMarkets() {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  return await db
-    .select()
-    .from(schema.markets)
-    .orderBy(schema.markets.createdAt);
+  return dbQuery(() =>
+    db.select().from(schema.markets).orderBy(schema.markets.createdAt)
+  );
 }
 
 export async function getMarketById(id: string) {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  const [market] = await db
-    .select()
-    .from(schema.markets)
-    .where(eq(schema.markets.id, id));
-  return market;
+  return dbQuery(async () => {
+    const [market] = await db
+      .select()
+      .from(schema.markets)
+      .where(eq(schema.markets.id, id));
+    return market;
+  });
 }
 
 export async function getUserById(id: string) {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  const [user] = await db
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.id, id));
-  return user;
+  return dbQuery(async () => {
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.id, id));
+    return user;
+  });
 }
 
 export async function getUserByEmail(email: string) {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  const [user] = await db
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.email, email));
-  return user;
+  return dbQuery(async () => {
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email));
+    return user;
+  });
 }
 
 export async function getTradesByUserId(userId: string) {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  return await db
-    .select()
-    .from(schema.trades)
-    .where(eq(schema.trades.userId, userId))
-    .orderBy(schema.trades.createdAt);
+  return dbQuery(() =>
+    db
+      .select()
+      .from(schema.trades)
+      .where(eq(schema.trades.userId, userId))
+      .orderBy(schema.trades.createdAt)
+  );
 }
 
 export async function getPriceHistory(marketId: string) {
-  if (!db)
-    throw new Error("Database not initialized. Set DATABASE_URL in .env.local");
-  return await db
-    .select()
-    .from(schema.marketPriceHistory)
-    .where(eq(schema.marketPriceHistory.marketId, marketId))
-    .orderBy(schema.marketPriceHistory.timestamp);
+  return dbQuery(() =>
+    db
+      .select()
+      .from(schema.marketPriceHistory)
+      .where(eq(schema.marketPriceHistory.marketId, marketId))
+      .orderBy(schema.marketPriceHistory.timestamp)
+  );
 }

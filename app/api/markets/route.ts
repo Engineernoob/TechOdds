@@ -5,9 +5,11 @@ export async function GET() {
   try {
     const markets = await getMarkets();
     return NextResponse.json(markets);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching markets:", error);
-    return NextResponse.json({ error: "Failed to fetch markets" }, { status: 500 });
+    const errorMessage =
+      error?.message ||
+      "Failed to fetch markets. Please check your database connection.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
