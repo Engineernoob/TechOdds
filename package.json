@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate:pg",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "drizzle-kit migrate:pg",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
