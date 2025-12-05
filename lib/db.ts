@@ -1,27 +1,14 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { databaseConfig } from "./env";
+import * as schema from "@/db/schema";
+import { getDatabase } from "./db-connection";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-const connectionString = databaseConfig.url;
+// Export database instance using lazy initialization
+// This allows the app to build even without DATABASE_URL set
+export const db = getDatabase();
 
-// Only initialize if DATABASE_URL is set and valid (for build-time, this may be undefined)
-let client: ReturnType<typeof postgres> | null = null;
-if (
-  connectionString &&
-  !connectionString.includes("your") &&
-  !connectionString.includes("localhost")
-) {
-  try {
-    client = postgres(connectionString);
-  } catch (error) {
-    console.warn("Failed to initialize database connection:", error);
-    client = null;
-  }
-}
-
-export const db = client ? drizzle(client, { schema }) : (null as any);
+// Type for database instance
+type DatabaseInstance = PostgresJsDatabase<typeof schema>;
 
 export type User = typeof schema.users.$inferSelect;
 export type NewUser = typeof schema.users.$inferInsert;
@@ -34,14 +21,16 @@ export type NewMarketPriceHistory =
   typeof schema.marketPriceHistory.$inferInsert;
 
 // Helper function to wrap database queries with better error handling
-async function dbQuery<T>(queryFn: () => Promise<T>): Promise<T> {
-  if (!db) {
+async function dbQuery<T>(queryFn: (db: DatabaseInstance) => Promise<T>): Promise<T> {
+  const database = getDatabase();
+  if (!database) {
     throw new Error(
-      "Database not initialized. Please set DATABASE_URL in .env.local"
+      "Database not initialized. Please set DATABASE_URL in .env.local. " +
+        "See SETUP.md for instructions."
     );
   }
   try {
-    return await queryFn();
+    return await queryFn(database);
   } catch (error: any) {
     if (error?.code === "ENOTFOUND" || error?.code === "ECONNREFUSED") {
       const hostname = error?.hostname || "unknown";
@@ -60,14 +49,19 @@ async function dbQuery<T>(queryFn: () => Promise<T>): Promise<T> {
 
 // Helper functions
 export async function getMarkets() {
-  return dbQuery(() =>
-    db.select().from(schema.markets).orderBy(schema.markets.createdAt)
-  );
+  return dbQuery(async () => {
+    const database = getDatabase()!;
+    return await database
+      .select()
+      .from(schema.markets)
+      .orderBy(schema.markets.createdAt);
+  });
 }
 
 export async function getMarketById(id: string) {
   return dbQuery(async () => {
-    const [market] = await db
+    const database = getDatabase()!;
+    const [market] = await database
       .select()
       .from(schema.markets)
       .where(eq(schema.markets.id, id));
@@ -77,7 +71,8 @@ export async function getMarketById(id: string) {
 
 export async function getUserById(id: string) {
   return dbQuery(async () => {
-    const [user] = await db
+    const database = getDatabase()!;
+    const [user] = await database
       .select()
       .from(schema.users)
       .where(eq(schema.users.id, id));
@@ -87,7 +82,8 @@ export async function getUserById(id: string) {
 
 export async function getUserByEmail(email: string) {
   return dbQuery(async () => {
-    const [user] = await db
+    const database = getDatabase()!;
+    const [user] = await database
       .select()
       .from(schema.users)
       .where(eq(schema.users.email, email));
@@ -96,21 +92,23 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function getTradesByUserId(userId: string) {
-  return dbQuery(() =>
-    db
+  return dbQuery(async () => {
+    const database = getDatabase()!;
+    return await database
       .select()
       .from(schema.trades)
       .where(eq(schema.trades.userId, userId))
-      .orderBy(schema.trades.createdAt)
-  );
+      .orderBy(schema.trades.createdAt);
+  });
 }
 
 export async function getPriceHistory(marketId: string) {
-  return dbQuery(() =>
-    db
+  return dbQuery(async () => {
+    const database = getDatabase()!;
+    return await database
       .select()
       .from(schema.marketPriceHistory)
       .where(eq(schema.marketPriceHistory.marketId, marketId))
-      .orderBy(schema.marketPriceHistory.timestamp)
-  );
+      .orderBy(schema.marketPriceHistory.timestamp);
+  });
 }
